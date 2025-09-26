@@ -598,7 +598,7 @@ function exportarPDF() {
     doc.autoTable({
         html: '#resultadoMasivo table', startY: 70, theme: 'grid',
         headStyles: { fillColor: [220, 53, 69] },
-        styles: { fontSize: 9, cellPadding: 4, overflow: 'linebreak' },
+        styles: { fontSize: 8, cellPadding: 4, overflow: 'linebreak' },
     });
     doc.save('reporte_sueldos.pdf');
 }
