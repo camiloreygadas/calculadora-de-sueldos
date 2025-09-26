@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora de Sueldos Chile</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body data-theme="light">
+    <div class="container">
+        <header class="header">
+            <h1>📊 Calculadora de Sueldos Chile</h1>
+            <p>Cálculo (Líquido a Base) ----- (Base a Líquido)</p>
+            <button id="theme-toggle" title="Cambiar tema">☀️</button>
+        </header>
+        
+        <main class="content">
+            <div class="tabs">
+                <button class="tab active" onclick="showTab('inverso-individual')">Inverso Individual</button>
+                <button class="tab" onclick="showTab('inverso-masivo')">Inverso Masivo</button>
+                <button class="tab" onclick="showTab('directo')">Directo</button>
+            </div>
+            
+            <div id="inverso-individual" class="tab-content active">
+                <section class="section"><h2 class="section-title">Cálculo Inverso (de Líquido a Base)</h2><div class="input-group"><div class="input-item"><label for="cargoIndividual">Cargo</label><input type="text" id="cargoIndividual" placeholder="Ej: Soldador"></div><div class="input-item"><label for="liquidoIndividual">Sueldo Líquido a Pago Deseado</label><input type="number" id="liquidoIndividual" placeholder="Ej: 1500000" onkeyup="validarInput(this)"><p class="error-message"></p></div></div><button class="btn-calculate" onclick="calcularIndividual(event)"><span class="btn-text">CALCULAR SUELDO BASE</span><span class="spinner hidden"></span></button><div id="resultadoIndividual"></div></section>
+            </div>
+            
+            <div id="inverso-masivo" class="tab-content">
+                <section class="section"><h2 class="section-title">Cálculo Inverso Masivo por Cargos</h2><div class="warning-box"><p><strong>📝 Instrucciones:</strong> Agregue los cargos con sus respectivos sueldos líquidos deseados.</p></div><div id="cargosContainer"></div><button class="btn-add" onclick="agregarCargo()">➕ Agregar Cargo</button><button class="btn-calculate" onclick="calcularMasivo(event)"><span class="btn-text">CALCULAR TODOS</span><span class="spinner hidden"></span></button><div id="resultadoMasivo"></div></section>
+            </div>
+
+            <div id="directo" class="tab-content">
+                <section class="section"><h2 class="section-title">Cálculo Directo (de Base a Líquido)</h2><div class="input-group"><div class="input-item"><label for="baseDirecto">Sueldo Base</label><input type="number" id="baseDirecto" placeholder="Ej: 2000000" onkeyup="validarInput(this)"><p class="error-message"></p></div></div><button class="btn-calculate" onclick="calcularDirecto(event)"><span class="btn-text">CALCULAR SUELDO LÍQUIDO</span><span class="spinner hidden"></span></button><div id="resultadoDirecto"></div></section>
+            </div>
+            
+            <section class="section">
+                <h2 class="section-title">⚙️ Configuración Global de Parámetros</h2>
+                
+                <div class="info-box"><p><strong>👤 Perfiles de Configuración (Compartidos en la Nube)</strong></p></div>
+                <div class="profile-controls">
+                    <select id="profileSelector" title="Seleccionar un perfil existente"></select>
+                    <button class="btn-export" onclick="cargarPerfil()">Cargar</button>
+                    <input type="text" id="profileNameInput" placeholder="Nombre del nuevo perfil" title="Nombre para el nuevo perfil">
+                    <button class="btn-add" onclick="guardarPerfil()">Guardar</button>
+                    <button class="btn-remove" onclick="borrarPerfil()">Borrar</button>
+                </div>
+
+                <div class="info-box"><p><strong>📊 Haberes y Descuentos Generales</strong></p></div>
+                <div class="input-group">
+                    <div class="input-item"><label for="afpSeleccion">Seleccionar AFP</label><select id="afpSeleccion" onchange="actualizarPorcentajeAFP()"><option value="manual">Porcentaje Manual</option><option value="11.44">Capital (11.44%)</option><option value="11.44">Cuprum (11.44%)</option><option value="11.27">Habitat (11.27%)</option><option value="11.16">PlanVital (11.16%)</option><option value="11.45">ProVida (11.45%)</option><option value="10.58">Modelo (10.58%)</option><option value="10.49">Uno (10.49%)</option></select></div>
+                    <div class="input-item"><label for="afp">AFP (% Trab.)</label><input type="number" id="afp" value="10" step="0.01"></div>
+                    <div class="input-item"><label for="salud">Salud (%)</label><input type="number" id="salud" value="7" step="0.01"></div>
+                    <div class="input-item"><label for="tipoContrato">Tipo de Contrato</label><select id="tipoContrato"><option value="0.6">Indefinido (Aporte 0.6%)</option><option value="0">Plazo Fijo / Obra (Aporte 0%)</option></select></div>
+                    <div class="input-item grid-col-span-2"><label for="tipoBono">Agregar Bono (Imponible)</label><div class="input-with-buttons bono-controls"><select id="tipoBono" onchange="actualizarVisibilidadBono()"><option value="sin">Sin Bono</option><option value="fijo">Monto Fijo ($)</option><option value="porcentaje">Porcentaje (% del Base)</option></select><input type="number" id="valorBono" placeholder="Ingrese el valor"></div></div>
+                </div>
+
+                <div class="info-box"><p><strong>💰 Haberes No Imponibles</strong></p></div>
+                <div class="input-group">
+                    <div class="input-item"><label for="bonoColacion">Asignación de Colación ($)</label><input type="number" id="bonoColacion" placeholder="0"></div>
+                    <div class="input-item"><label for="bonoMovilizacion">Asignación de Movilización ($)</label><input type="number" id="bonoMovilizacion" placeholder="0"></div>
+                </div>
+                
+                <div class="info-box"><p><strong>⚙️ Parámetros Base del Sistema</strong></p></div>
+                <div class="input-group">
+                    <div class="input-item"><label for="sueldoMinimo">Ingreso Mínimo Mensual ($)</label><input type="number" id="sueldoMinimo" value="529000" onchange="actualizarParametros()"></div>
+                    <div class="input-item grid-col-span-2"><label for="valorUF">Valor UF ($) <span id="ufStatus" class="status-text"></span></label><div class="input-with-buttons"><input type="number" id="valorUF" value="38500" step="0.01" onchange="actualizarParametros()"><input type="date" id="fechaUF" title="Seleccionar fecha para buscar UF"><button class="btn-add" onclick="buscarUfPorFechaSeleccionada()" title="Buscar UF">Buscar</button><button class="btn-export" onclick="fetchUfHoy()" title="UF de Hoy">Hoy</button></div></div>
+                    <div class="input-item"><label for="topeGratificacion">Tope Gratificación (IMM)</label><input type="number" id="topeGratificacion" value="4.75" step="0.01" onchange="actualizarParametros()"></div>
+                </div>
+                
+                <div class="warning-box"><p><strong>🔒 Topes Imponibles (en UF)</strong></p></div>
+                <div class="input-group">
+                    <div class="input-item"><label for="topeAFP">Tope AFP y Salud (UF)</label><input type="number" id="topeAFP" value="87.8" step="0.1" onchange="actualizarParametros()"></div>
+                    <div class="input-item"><label for="topeIPS">Tope IPS/ex INP (UF)</label><input type="number" id="topeIPS" value="60" step="0.1" onchange="actualizarParametros()"></div>
+                    <div class="input-item"><label for="topeCesantia">Tope Seguro Cesantía (UF)</label><input type="number" id="topeCesantia" value="131.9" step="0.1" onchange="actualizarParametros()"></div>
+                </div>
+                
+                <div class="formula-display" id="valoresCalculados"></div>
+            </section>
+            
+            <section class="section">
+                <h2 class="section-title">📋 Tabla de Impuesto Único de Segunda Categoría (Editable)</h2>
+                <div class="info-box tax-table-controls">
+                    <label for="mesTablaImpuestos">Cargar tabla oficial para el mes:</label>
+                    <input type="month" id="mesTablaImpuestos" title="Seleccionar mes para cargar tabla de impuestos">
+                    <button class="btn-add" onclick="cargarTablaImpuestosHistorica()">Cargar Tabla</button>
+                    <span id="tablaImpuestosStatus" class="status-text"></span>
+                </div>
+                <div class="table-wrapper"><div id="tablaImpuestosContainer"></div></div>
+                <div class="mt-20">
+                    <button class="btn-add" onclick="restaurarValoresDefaultImpuestos()">🔄 Restaurar Tabla Original</button>
+                </div>
+            </section>
+        </main>
+    </div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+    
+    <script src="script.js" type="module"></script>
+</body>
+</html>
