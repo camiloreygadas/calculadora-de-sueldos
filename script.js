@@ -76,7 +76,9 @@ Object.assign(window, {
     validarInput,
     guardarPerfil,
     cargarPerfil,
-    borrarPerfil
+    borrarPerfil,
+    exportarExcel,
+    exportarPDF
 });
 
 // --- LÓGICA DE NAVEGACIÓN (TABS) ---
@@ -218,10 +220,11 @@ function calcularDesdeBase(sueldoBase) {
     
     const baseTributable = totalImponible - totalDescPrev;
     const impuesto = calcularImpuesto(baseTributable);
-    const liquidoImponible = totalImponible - totalDescPrev - impuesto;
+    const totalDescuentos = totalDescPrev + impuesto;
+    const liquidoImponible = totalImponible - totalDescuentos;
     const liquidoFinal = liquidoImponible + colacion + movilizacion;
 
-    return { sueldoBase, gratificacion, bono, totalImponible, afp: descAFP, salud: descSalud, cesantia: descCesantia, impuesto, colacion, movilizacion, liquidoCalculado: liquidoFinal };
+    return { sueldoBase, gratificacion, bono, totalImponible, afp: descAFP, salud: descSalud, cesantia: descCesantia, impuesto, totalDescuentos, colacion, movilizacion, liquidoCalculado: liquidoFinal };
 }
 
 function calcularSueldoBaseInverso(liquidoPagoDeseado) {
@@ -308,7 +311,7 @@ function calcularMasivo(event) {
             return;
         }
         
-        let html = `<div class="table-wrapper"><table class="result-table"><thead><tr><th>Cargo</th><th>Líquido Objetivo</th><th>Sueldo Base</th><th>Gratificación</th><th>Bono</th><th>Total Imponible</th><th>Colación</th><th>Movilización</th><th>Líquido Final</th></tr></thead><tbody>`;
+        let html = `<div class="table-wrapper"><table class="result-table"><thead><tr><th>Cargo</th><th>Líquido Obj.</th><th>S. Base</th><th>Grat.</th><th>Bono</th><th>T. Imponible</th><th>AFP</th><th>Salud</th><th>Cesantía</th><th>Impuesto</th><th>T. Descuentos</th><th>Colación</th><th>Movil.</th><th>Líquido a Pago</th></tr></thead><tbody>`;
         let totalLiquidos = 0, totalBases = 0;
 
         for (let i = 0; i < cargos.length; i++) {
@@ -317,7 +320,22 @@ function calcularMasivo(event) {
                 const r = calcularSueldoBaseInverso(liquidoDeseado);
                 if (r) {
                     totalLiquidos += r.liquidoCalculado; totalBases += r.sueldoBase;
-                    html += `<tr><td style="text-align: left; font-weight: 600;">${cargos[i].value || `Cargo ${i+1}`}</td><td>${formatMoney(liquidoDeseado)}</td><td style="background: var(--info-box-bg);">${formatMoney(r.sueldoBase)}</td><td>${formatMoney(r.gratificacion)}</td><td>${formatMoney(r.bono)}</td><td>${formatMoney(r.totalImponible)}</td><td>${formatMoney(r.colacion)}</td><td>${formatMoney(r.movilizacion)}</td><td style="background: #d4edda; font-weight: bold; color: #155724;">${formatMoney(r.liquidoCalculado)}</td></tr>`;
+                    html += `<tr>
+                        <td style="text-align: left; font-weight: 600;">${cargos[i].value || `Cargo ${i+1}`}</td>
+                        <td>${formatMoney(liquidoDeseado)}</td>
+                        <td style="background: var(--info-box-bg);">${formatMoney(r.sueldoBase)}</td>
+                        <td>${formatMoney(r.gratificacion)}</td>
+                        <td>${formatMoney(r.bono)}</td>
+                        <td>${formatMoney(r.totalImponible)}</td>
+                        <td>${formatMoney(r.afp)}</td>
+                        <td>${formatMoney(r.salud)}</td>
+                        <td>${formatMoney(r.cesantia)}</td>
+                        <td>${formatMoney(r.impuesto)}</td>
+                        <td style="font-weight: bold;">${formatMoney(r.totalDescuentos)}</td>
+                        <td>${formatMoney(r.colacion)}</td>
+                        <td>${formatMoney(r.movilizacion)}</td>
+                        <td style="background: #d4edda; font-weight: bold; color: #155724;">${formatMoney(r.liquidoCalculado)}</td>
+                    </tr>`;
                 }
             }
         }
@@ -345,6 +363,7 @@ function generarHTMLResultado(r, objetivo, esInverso = false) {
         <tr><td>Salud (-)</td><td>${formatMoney(r.salud)}</td></tr>
         <tr><td>Seguro Cesantía (-)</td><td>${formatMoney(r.cesantia)}</td></tr>
         <tr><td>Impuesto 2ª Categoría (-)</td><td>${formatMoney(r.impuesto)}</td></tr>
+        <tr style="font-weight: bold;"><td>Total Descuentos</td><td>${formatMoney(r.totalDescuentos)}</td></tr>
         <tr><th colspan="2">Haberes No Imponibles</th></tr>
         <tr><td>Asig. Colación</td><td>${formatMoney(r.colacion)}</td></tr>
         <tr><td>Asig. Movilización</td><td>${formatMoney(r.movilizacion)}</td></tr>
@@ -354,8 +373,6 @@ function generarHTMLResultado(r, objetivo, esInverso = false) {
 
 
 // --- FUNCIONES AUXILIARES Y DE CONFIGURACIÓN ---
-// ... (El resto del código auxiliar es idéntico a la versión anterior)
-
 function actualizarParametros() {
     SUELDO_MINIMO = parseFloat(document.getElementById('sueldoMinimo').value) || 0;
     VALOR_UF = parseFloat(document.getElementById('valorUF').value) || 0;
@@ -397,9 +414,9 @@ function actualizarVisibilidadBono() {
 function validarInput(inputElement) {
     const value = inputElement.value;
     const errorEl = inputElement.nextElementSibling;
-    if (!value || parseFloat(value) <= 0) {
+    if (value === '' || parseFloat(value) < 0) { // Permitir 0 pero no vacío o negativo
         inputElement.classList.add('input-error');
-        errorEl.textContent = 'El valor debe ser un número mayor a cero.';
+        errorEl.textContent = 'El valor debe ser un número válido.';
         return false;
     }
     inputElement.classList.remove('input-error');
@@ -565,7 +582,7 @@ function exportarExcel() {
     const table = document.querySelector('#resultadoMasivo table');
     if (!table) return alert('No hay datos para exportar');
     const ws = XLSX.utils.table_to_sheet(table, { raw: true });
-    ws['!cols'] = Array.from({ length: 11 }, () => ({ wch: 15 }));
+    ws['!cols'] = Array.from({ length: table.rows[0].cells.length }, () => ({ wch: 15 }));
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Sueldos');
     XLSX.writeFile(wb, 'calculo_sueldos.xlsx');
