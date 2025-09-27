@@ -3,16 +3,15 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
 import { getFirestore, collection, doc, setDoc, getDoc, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
-// ▼▼▼ PEGA AQUÍ TU OBJETO firebaseConfig QUE COPIASTE DE LA CONSOLA DE FIREBASE ▼▼▼
+// --- INICIALIZACIÓN DE FIREBASE (MÓDULO) ---
 const firebaseConfig = {
   apiKey: "AIzaSyAxpejPWMOZEgKF8POl27KpaeKLk3BTbqE",
   authDomain: "calculadora-sueldos-compartida.firebaseapp.com",
   projectId: "calculadora-sueldos-compartida",
-  storageBucket: "calculadora-sueldos-compartida.firebasestorage.app",
+  storageBucket: "calculadora-sueldos-compartida.appspot.com",
   messagingSenderId: "937496000961",
   appId: "1:937496000961:web:b62a7cf0f781c66b4ed740"
 };
-// ▲▲▲ NO OLVIDES PEGAR TU CONFIGURACIÓN ARRIBA ▲▲▲
 
 // Inicializar Firebase
 const app = initializeApp(firebaseConfig);
@@ -592,11 +591,12 @@ function exportarPDF() {
     const table = document.querySelector('#resultadoMasivo table');
     if (!table) return alert('No hay datos para exportar a PDF');
     
-    // La librería jsPDF ahora es importada al principio del módulo
+    // CORRECCIÓN: Usar la variable global `jspdf` que es creada por el script cargado en el HTML.
+    const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a3' });
     doc.setFontSize(16);
     doc.text('Reporte de Cálculo de Sueldos', 40, 50);
-    // El plugin autoTable se adjunta automáticamente al prototipo de jsPDF
+    // El plugin autoTable se adjunta al objeto jspdf
     doc.autoTable({
         html: '#resultadoMasivo table', startY: 70, theme: 'grid',
         headStyles: { fillColor: [220, 53, 69] },
